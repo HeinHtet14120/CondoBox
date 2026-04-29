@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>CondoBox · Design</title>
+  <link rel="stylesheet" href="styles.css"/>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="browser-window.jsx"></script>
+  <script type="text/babel" src="components.jsx"></script>
+  <script type="text/babel" src="screens-auth.jsx"></script>
+  <script type="text/babel" src="screens-admin.jsx"></script>
+  <script type="text/babel" src="screens-resident.jsx"></script>
+
+  <script type="text/babel" data-presets="env,react">
+    const { useState, useEffect } = React;
+
+    // ── Tweaks panel ────────────────────────────────────────────
+    function Tweaks({ dark, setDark, fillMap, setFillMap, screens }) {
+      const [open, setOpen] = useState(true);
+      return (
+        <div className="tweaks" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8, width: open ? 280 : 'auto', padding: open ? '12px 14px' : '8px 12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Icon.Settings size={14} style={{ color: 'var(--text-tertiary)' }}/>
+            <span style={{ fontWeight: 700 }}>Tweaks</span>
+            <span style={{ flex: 1 }}/>
+            <button onClick={()=>setOpen(o=>!o)} style={{
+              border: 'none', background: 'transparent', cursor: 'pointer',
+              color: 'var(--text-tertiary)', padding: 2,
+            }}>
+              {open ? <Icon.X size={14}/> : <Icon.ChevronDown size={14}/>}
+            </button>
+          </div>
+          {open ? (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Theme</span>
+                <div className="seg">
+                  <button className={!dark ? 'active' : ''} onClick={()=>setDark(false)}><Icon.Sun size={12}/> Light</button>
+                  <button className={dark ? 'active' : ''} onClick={()=>setDark(true)}><Icon.Moon size={12}/> Dark</button>
+                </div>
+              </div>
+              <div className="divider" style={{ margin: '4px 0' }}/>
+              <div style={{ color: 'var(--text-secondary)', fontSize: 12, marginBottom: 4 }}>Empty / filled state per screen</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 220, overflow: 'auto' }}>
+                {screens.map(s => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
+                    <span style={{ color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.short}</span>
+                    <div className="seg" style={{ flexShrink: 0 }}>
+                      <button className={fillMap[s.id] ? 'active' : ''} onClick={()=>setFillMap(m=>({ ...m, [s.id]: true }))}>Filled</button>
+                      <button className={!fillMap[s.id] ? 'active' : ''} onClick={()=>setFillMap(m=>({ ...m, [s.id]: false }))}>Empty</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
+      );
+    }
+
+    // ── Frames ──────────────────────────────────────────────────
+    function PhoneArtboard({ children, dark }) {
+      // Use IOSDevice frame to make resident screens feel like an app
+      return (
+        <IOSDevice width={390} height={780} dark={dark}>
+          <div style={{ width: '100%', height: '100%' }}>{children}</div>
+        </IOSDevice>
+      );
+    }
+    function DesktopArtboard({ children, url = 'condobox.app/admin' }) {
+      return (
+        <ChromeWindow tabs={[{ title: 'CondoBox · Admin', active: true }]} url={url} width={1180} height={760}>
+          <div style={{ width: '100%', height: '100%' }}>{children}</div>
+        </ChromeWindow>
+      );
+    }
+
+    // ── App ─────────────────────────────────────────────────────
+    function App() {
+      const [dark, setDark] = useState(false);
+      const SCREENS = [
+        { id: 's1', short: '1 · Login' },
+        { id: 's2', short: '2 · Register' },
+        { id: 's3', short: '3 · Setup' },
+        { id: 's4', short: '4 · Admin Dashboard' },
+        { id: 's5', short: '5 · New Parcel' },
+        { id: 's6', short: '6 · Pickup' },
+        { id: 's7', short: '7 · Resident Home' },
+        { id: 's8', short: '8 · QR Detail' },
+      ];
+      const [fillMap, setFillMap] = useState(Object.fromEntries(SCREENS.map(s => [s.id, true])));
+      useEffect(() => {
+        document.documentElement.classList.toggle('dark', dark);
+        document.body.style.background = dark ? '#08080a' : '#f0f1f4';
+      }, [dark]);
+
+      return (
+        <>
+          <DesignCanvas>
+            <DCSection id="auth" title="Authentication" subtitle="Login & registration · soft mesh background, single centered card">
+              <DCArtboard id="s1" label="01 · Login" width={460} height={620}>
+                <DesktopArtboard url="condobox.app/login">
+                  <ScreenLogin filled={fillMap.s1}/>
+                </DesktopArtboard>
+              </DCArtboard>
+              <DCArtboard id="s2" label="02 · Resident registration" width={460} height={680}>
+                <DesktopArtboard url="condobox.app/register">
+                  <ScreenRegister filled={fillMap.s2}/>
+                </DesktopArtboard>
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="onboarding" title="Onboarding" subtitle="One-time admin setup">
+              <DCArtboard id="s3" label="03 · Condo setup" width={680} height={780}>
+                <DesktopArtboard url="condobox.app/setup">
+                  <ScreenAdminSetup filled={fillMap.s3}/>
+                </DesktopArtboard>
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="admin" title="Admin · Front desk" subtitle="Desktop-native multi-column layouts">
+              <DCArtboard id="s4" label="04 · Admin dashboard" width={1220} height={820}>
+                <DesktopArtboard>
+                  <ScreenAdminDashboard filled={fillMap.s4}/>
+                </DesktopArtboard>
+              </DCArtboard>
+              <DCArtboard id="s5" label="05 · New parcel (form + success)" width={820} height={820}>
+                <DesktopArtboard url="condobox.app/admin/parcels/new">
+                  <ScreenAdminNewParcel filled={fillMap.s5}/>
+                </DesktopArtboard>
+              </DCArtboard>
+              <DCArtboard id="s6" label="06 · Scan & confirm pickup" width={1080} height={820}>
+                <DesktopArtboard url="condobox.app/admin/pickup">
+                  <ScreenAdminPickup filled={fillMap.s6}/>
+                </DesktopArtboard>
+              </DCArtboard>
+            </DCSection>
+
+            <DCSection id="resident" title="Resident · Mobile" subtitle="Phone-first; constrained to 390px width">
+              <DCArtboard id="s7" label="07 · Resident dashboard" width={420} height={820}>
+                <PhoneArtboard dark={dark}>
+                  <ScreenResidentDashboard filled={fillMap.s7}/>
+                </PhoneArtboard>
+              </DCArtboard>
+              <DCArtboard id="s8" label="08 · Parcel QR detail (sheet)" width={420} height={820}>
+                <PhoneArtboard dark={dark}>
+                  <ScreenParcelQRDetail filled={fillMap.s8}/>
+                </PhoneArtboard>
+              </DCArtboard>
+            </DCSection>
+          </DesignCanvas>
+
+          <Tweaks dark={dark} setDark={setDark} fillMap={fillMap} setFillMap={setFillMap} screens={SCREENS}/>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>

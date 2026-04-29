@@ -1,0 +1,55 @@
+// Prisma schema for the Condo Parcel Management System.
+// Note: SQLite does not support native enums, so Role and ParcelStatus
+// are stored as String. Allowed values are enforced in the application
+// layer (lib/models/*) and via TypeScript types.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  role         String
+  roomId       String?  @unique
+  room         Room?    @relation(fields: [roomId], references: [id])
+  createdAt    DateTime @default(now())
+}
+
+model Room {
+  id         String   @id
+  isOccupied Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  user       User?
+  parcels    Parcel[]
+}
+
+model Parcel {
+  id          String    @id @default(cuid())
+  qrCode      String    @unique
+  roomId      String
+  room        Room      @relation(fields: [roomId], references: [id])
+  sender      String
+  description String
+  notes       String?
+  status      String    @default("waiting")
+  arrivedAt   DateTime  @default(now())
+  pickedUpAt  DateTime?
+
+  @@index([roomId])
+  @@index([status])
+}
+
+model CondoConfig {
+  id            Int      @id @default(1)
+  totalRooms    Int      @default(0)
+  isInitialized Boolean  @default(false)
+  createdAt     DateTime @default(now())
+}
